@@ -1,5 +1,7 @@
 package com.utkarsh.paytm_wallet_clone.model;
 
+import com.utkarsh.paytm_wallet_clone.model.enums.TransactionStatus;
+import com.utkarsh.paytm_wallet_clone.model.enums.TransactionType;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,17 +45,8 @@ public class Transaction {
 
     // ─── Enums ───────────────────────────────────────────────────────────────
 
-    public enum TransactionType {
-        CREDIT,    // money added to wallet (e.g. Razorpay top-up)
-        DEBIT,     // money withdrawn from wallet
-        TRANSFER   // wallet-to-wallet transfer
-    }
+// All the code are inside enum package .....
 
-    public enum TransactionStatus {
-        PENDING,   // initiated, not yet settled
-        SUCCESS,   // completed successfully
-        FAILED     // failed / rolled back
-    }
 
     // ─── Getters & Setters ───────────────────────────────────────────────────
 
