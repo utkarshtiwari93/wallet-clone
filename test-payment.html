@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Razorpay Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body style="font-family: Arial; padding: 50px;">
+<h1>🧪 Test Payment for Paytm Wallet Clone</h1>
+<p>Order ID: <strong id="orderId">order_SIIXeNbGDwXLBG</strong></p>
+<p>Amount: <strong>₹100.00</strong></p>
+<button onclick="payNow()" style="padding: 15px 30px; font-size: 18px; cursor: pointer; background: #3399cc; color: white; border: none; border-radius: 5px;">
+    Pay ₹100 Now
+</button>
+
+<script>
+    function payNow() {
+        var options = {
+            "key": "rzp_test_SIJnmRj4Urmw9P", //
+            "amount": "100000", // Amount in paise (₹100 = 10000 paise)
+            "currency": "INR",
+            "name": "Paytm Wallet Clone",
+            "description": "Test Wallet Top-up",
+            "order_id": "order_SIM5jCCr6wbbJH", // ← Replace with your order_id
+            "handler": function (response){
+                alert("✅ Payment Successful!\n\nPayment ID: " + response.razorpay_payment_id);
+                console.log("Payment ID: " + response.razorpay_payment_id);
+                console.log("Order ID: " + response.razorpay_order_id);
+                console.log("Signature: " + response.razorpay_signature);
+            },
+            "prefill": {
+                "name": "Test User",
+                "email": "test@example.com",
+                "contact": "9999999999"
+            },
+            "theme": {
+                "color": "#3399cc"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    }
+</script>
+</body>
+</html>

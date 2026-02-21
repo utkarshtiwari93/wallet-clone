@@ -1,9 +1,11 @@
 package com.utkarsh.paytm_wallet_clone.service;
 
+import com.utkarsh.paytm_wallet_clone.dto.response.UserLookupDTO;
 import com.utkarsh.paytm_wallet_clone.dto.response.WalletBalanceDTO;
 import com.utkarsh.paytm_wallet_clone.exception.WalletNotFoundException;
 import com.utkarsh.paytm_wallet_clone.model.User;
 import com.utkarsh.paytm_wallet_clone.model.Wallet;
+import com.utkarsh.paytm_wallet_clone.repository.UserRepository;
 import com.utkarsh.paytm_wallet_clone.repository.WalletRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +16,11 @@ import java.math.BigDecimal;
 public class WalletService {
 
     private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
 
-    public WalletService(WalletRepository walletRepository) {
+    public WalletService(WalletRepository walletRepository, UserRepository userRepository) {
         this.walletRepository = walletRepository;
+        this.userRepository = userRepository;
     }
 
     // ─── Get balance for the logged-in user ──────────────────────────────────
@@ -34,6 +38,15 @@ public class WalletService {
                 user.getId(),
                 user.getName()
         );
+    }
+
+    // ─── Lookup user by phone number ──────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public UserLookupDTO lookupUserByPhone(String phone) {
+        return userRepository.findByPhone(phone)
+                .map(user -> new UserLookupDTO(user.getName(), user.getPhone(), true))
+                .orElse(UserLookupDTO.notFound());
     }
 
     // ─── Internal helper used by TransferService, PaymentService etc. ─────────

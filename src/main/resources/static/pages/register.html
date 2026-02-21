@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - PayFlow Wallet</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="logo">
+            <span class="logo-icon">💳</span>
+            <span class="logo-text">PayFlow</span>
+        </div>
+
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Start your digital wallet journey today</p>
+
+        <form onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label class="form-label" for="name">Full Name</label>
+                <input
+                        type="text"
+                        id="name"
+                        class="form-input"
+                        placeholder="Wade Warren"
+                        required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input
+                        type="email"
+                        id="email"
+                        class="form-input"
+                        placeholder="example@email.com"
+                        required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input
+                        type="tel"
+                        id="phone"
+                        class="form-input"
+                        placeholder="9999999999"
+                        pattern="[6-9][0-9]{9}"
+                        oninput="formatPhoneNumber(this)"
+                        required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <div class="password-wrapper">
+                    <input
+                            type="password"
+                            id="password"
+                            class="form-input"
+                            placeholder="••••••••"
+                            minlength="8"
+                            required
+                    >
+                    <button
+                            type="button"
+                            class="toggle-password"
+                            onclick="togglePassword('password')"
+                    >
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input
+                            type="password"
+                            id="confirmPassword"
+                            class="form-input"
+                            placeholder="••••••••"
+                            minlength="8"
+                            required
+                    >
+                    <button
+                            type="button"
+                            class="toggle-password"
+                            onclick="togglePassword('confirmPassword')"
+                    >
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+
+        <div class="auth-switch">
+            Already have an account?
+            <a href="../index.html">Sign In</a>
+        </div>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+</body>
+</html>

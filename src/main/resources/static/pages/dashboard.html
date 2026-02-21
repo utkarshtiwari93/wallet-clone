@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PayFlow Wallet</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <div class="welcome-text">
+                <h1>👋 Welcome, <span id="userName">User</span></h1>
+                <p>Manage your digital wallet seamlessly</p>
+            </div>
+            <button class="logout-btn" onclick="Auth.logout()">Logout</button>
+        </div>
+
+        <div class="balance-card">
+            <div class="balance-label">💰 Total Balance</div>
+            <div class="balance-amount" id="walletBalance">₹0.00</div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <a href="add-money.html" class="action-card">
+            <div class="action-icon">💵</div>
+            <div class="action-title">Add Money</div>
+            <div class="action-desc">Top up your wallet instantly</div>
+        </a>
+
+        <a href="transfer.html" class="action-card">
+            <div class="action-icon">↗️</div>
+            <div class="action-title">Send Money</div>
+            <div class="action-desc">Transfer to any phone number</div>
+        </a>
+
+        <a href="history.html" class="action-card">
+            <div class="action-icon">📊</div>
+            <div class="action-title">Transaction History</div>
+            <div class="action-desc">View all your transactions</div>
+        </a>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+    loadDashboard();
+</script>
+</body>
+</html>

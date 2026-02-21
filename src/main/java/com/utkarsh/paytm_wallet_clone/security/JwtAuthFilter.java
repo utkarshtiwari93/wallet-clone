@@ -31,18 +31,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
+        // ✅ Skip JWT check for public endpoints
+        if (path.startsWith("/api/auth") ||
+                path.startsWith("/webhook/razorpay")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
-        // No Bearer token — skip, let SecurityConfig decide if route is protected
+        // No token → continue (SecurityConfig will block if needed)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String token = authHeader.substring(7).trim(); // .trim() handles any extra whitespace // strip "Bearer "
-
-        System.out.println(">>> VALID: " + jwtUtil.validateToken(token));
-        System.out.println(">>> SECRET USED: " + token.substring(0, 10));
+        final String token = authHeader.substring(7).trim();
 
         if (!jwtUtil.validateToken(token)) {
             filterChain.doFilter(request, response);
@@ -51,17 +58,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String email = jwtUtil.extractEmail(token);
 
-        // Only set auth if not already authenticated
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userRepository.findByEmail(email).orElse(null);
+        if (email != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails =
+                    userRepository.findByEmail(email).orElse(null);
 
             if (userDetails != null) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
                 authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authToken);
             }
         }
 

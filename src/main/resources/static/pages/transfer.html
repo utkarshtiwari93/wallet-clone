@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Money - PayFlow Wallet</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Receiver preview box */
+        .receiver-preview {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .receiver-preview.show {
+            display: block;
+        }
+
+        .receiver-preview.not-found {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .receiver-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .receiver-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(76, 175, 80, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .receiver-icon.not-found {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        .receiver-details h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .receiver-details p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Confirmation modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .confirm-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .confirm-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .confirm-label {
+            color: var(--text-secondary);
+        }
+
+        .confirm-value {
+            font-weight: 600;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-confirm {
+            background: var(--accent-pink);
+            border: none;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: var(--accent-pink-hover);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">↗️ Send Money</h1>
+        <a href="dashboard.html" class="btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <div class="transfer-card">
+        <form id="transferForm" onsubmit="showConfirmation(event)">
+            <div class="form-group">
+                <label class="form-label" for="recipientPhone">Recipient Phone Number</label>
+                <input
+                        type="tel"
+                        id="recipientPhone"
+                        class="form-input"
+                        placeholder="9999999999"
+                        pattern="[6-9][0-9]{9}"
+                        oninput="handlePhoneInput(this)"
+                        required
+                >
+                <small style="color: var(--text-secondary); font-size: 13px; margin-top: 5px; display: block;">
+                    Enter the recipient's registered phone number
+                </small>
+            </div>
+
+            <!-- Receiver Preview Box -->
+            <div id="receiverPreview" class="receiver-preview">
+                <div class="receiver-info">
+                    <div class="receiver-icon" id="receiverIcon">👤</div>
+                    <div class="receiver-details">
+                        <h4 id="receiverName">Loading...</h4>
+                        <p id="receiverPhone"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="amount">Amount to Send</label>
+                <input
+                        type="number"
+                        id="amount"
+                        class="form-input"
+                        placeholder="₹ 100"
+                        min="0.01"
+                        step="0.01"
+                        required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="note">Note (Optional)</label>
+                <input
+                        type="text"
+                        id="note"
+                        class="form-input"
+                        placeholder="Lunch payment, Movie tickets, etc."
+                >
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn" disabled>
+                Send Money
+            </button>
+        </form>
+
+        <div style="margin-top: 25px; padding: 20px; background: rgba(255, 152, 0, 0.1); border-radius: 12px; border: 1px solid rgba(255, 152, 0, 0.2);">
+            <h4 style="margin-bottom: 10px;">⚠️ Important</h4>
+            <ul style="font-size: 14px; color: var(--text-secondary); padding-left: 20px;">
+                <li>Minimum transfer amount: ₹0.01</li>
+                <li>Transfers are instant and irreversible</li>
+                <li>Recipient must have a registered PayFlow account</li>
+                <li>Ensure you have sufficient balance</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-icon">💸</div>
+            <h2 class="modal-title">Confirm Transfer</h2>
+            <p style="color: var(--text-secondary); font-size: 14px;">Please review the details</p>
+        </div>
+
+        <div class="modal-body">
+            <div class="confirm-detail">
+                <span class="confirm-label">To:</span>
+                <span class="confirm-value" id="confirmReceiver">-</span>
+            </div>
+            <div class="confirm-detail">
+                <span class="confirm-label">Phone:</span>
+                <span class="confirm-value" id="confirmPhone">-</span>
+            </div>
+            <div class="confirm-detail">
+                <span class="confirm-label">Amount:</span>
+                <span class="confirm-value" id="confirmAmount" style="color: var(--accent-pink); font-size: 18px;">-</span>
+            </div>
+            <div class="confirm-detail" id="confirmNoteContainer" style="display: none;">
+                <span class="confirm-label">Note:</span>
+                <span class="confirm-value" id="confirmNote">-</span>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeConfirmation()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmTransfer()">Confirm & Send</button>
+        </div>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+    let receiverData = null;
+    let debounceTimer = null;
+
+    function handlePhoneInput(input) {
+        formatPhoneNumber(input);
+
+        const phone = input.value;
+        const submitBtn = document.getElementById('submitBtn');
+        const preview = document.getElementById('receiverPreview');
+
+        // Clear previous timer
+        clearTimeout(debounceTimer);
+
+        // Hide preview and disable button while typing
+        preview.classList.remove('show');
+        submitBtn.disabled = true;
+
+        // If phone is complete (10 digits), lookup user
+        if (phone.length === 10) {
+            debounceTimer = setTimeout(() => {
+                lookupReceiver(phone);
+            }, 500); // Wait 500ms after user stops typing
+        }
+    }
+
+    async function lookupReceiver(phone) {
+        const preview = document.getElementById('receiverPreview');
+        const icon = document.getElementById('receiverIcon');
+        const name = document.getElementById('receiverName');
+        const phoneEl = document.getElementById('receiverPhone');
+        const submitBtn = document.getElementById('submitBtn');
+
+        try {
+            const response = await apiCall(`/wallet/user/${phone}`);
+
+            if (response.exists) {
+                // User found
+                receiverData = response;
+                icon.textContent = '✅';
+                icon.classList.remove('not-found');
+                name.textContent = response.name;
+                phoneEl.textContent = `Phone: ${response.phone}`;
+                preview.classList.remove('not-found');
+                preview.classList.add('show');
+                submitBtn.disabled = false;
+            } else {
+                // User not found
+                receiverData = null;
+                icon.textContent = '❌';
+                icon.classList.add('not-found');
+                name.textContent = 'User not found';
+                phoneEl.textContent = 'No account with this phone number';
+                preview.classList.add('not-found');
+                preview.classList.add('show');
+                submitBtn.disabled = true;
+            }
+        } catch (error) {
+            console.error('Lookup error:', error);
+            receiverData = null;
+            preview.classList.remove('show');
+            submitBtn.disabled = true;
+        }
+    }
+
+    function showConfirmation(event) {
+        event.preventDefault();
+
+        if (!receiverData) {
+            showAlert('Please enter a valid recipient phone number', 'error');
+            return;
+        }
+
+        const amount = document.getElementById('amount').value;
+        const note = document.getElementById('note').value;
+
+        // Populate confirmation modal
+        document.getElementById('confirmReceiver').textContent = receiverData.name;
+        document.getElementById('confirmPhone').textContent = receiverData.phone;
+        document.getElementById('confirmAmount').textContent = `₹${parseFloat(amount).toFixed(2)}`;
+
+        if (note) {
+            document.getElementById('confirmNote').textContent = note;
+            document.getElementById('confirmNoteContainer').style.display = 'flex';
+        } else {
+            document.getElementById('confirmNoteContainer').style.display = 'none';
+        }
+
+        // Show modal
+        document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function closeConfirmation() {
+        document.getElementById('confirmModal').classList.remove('show');
+    }
+
+    async function confirmTransfer() {
+        const submitBtn = document.querySelector('.btn-confirm');
+        setLoading(submitBtn, true);
+
+        const recipientPhone = document.getElementById('recipientPhone').value;
+        const amount = document.getElementById('amount').value;
+        const note = document.getElementById('note').value;
+
+        try {
+            const response = await apiCall('/wallet/transfer', {
+                method: 'POST',
+                body: JSON.stringify({
+                    recipientPhone,
+                    amount: parseFloat(amount),
+                    note
+                })
+            });
+
+            closeConfirmation();
+            showAlert(`Successfully sent ₹${amount} to ${receiverData.name}`, 'success');
+
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 2000);
+        } catch (error) {
+            setLoading(submitBtn, false);
+            showAlert(error.message || 'Transfer failed', 'error');
+        }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeConfirmation();
+        }
+    });
+</script>
+</body>
+</html>

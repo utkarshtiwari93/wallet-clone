@@ -10,6 +10,8 @@ import com.utkarsh.paytm_wallet_clone.model.User;
 import com.utkarsh.paytm_wallet_clone.model.Wallet;
 import com.utkarsh.paytm_wallet_clone.repository.RazorpayOrderRepository;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import java.time.LocalDateTime;
 
 @Service
 public class PaymentService {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
 
     private final RazorpayClient razorpayClient;
     private final RazorpayOrderRepository razorpayOrderRepository;
@@ -48,6 +52,8 @@ public class PaymentService {
         int amountInPaise = amount.multiply(BigDecimal.valueOf(100)).intValue();
         String receipt = "receipt_" + user.getId() + "_" + System.currentTimeMillis();
 
+        log.info("Creating Razorpay order for user {} | Amount: ₹{}", user.getEmail(), amount);
+
         JSONObject orderRequest = new JSONObject();
         orderRequest.put("amount", amountInPaise);
         orderRequest.put("currency", "INR");
@@ -63,49 +69,53 @@ public class PaymentService {
         dbOrder.setAmount(amount);
         dbOrder.setCurrency("INR");
         dbOrder.setReceipt(receipt);
-        dbOrder.setStatus(RazorpayOrder.RazorpayOrderStatus.CREATED);  // ← Fixed
+        dbOrder.setStatus(RazorpayOrder.RazorpayOrderStatus.CREATED);
         razorpayOrderRepository.save(dbOrder);
+
+        log.info("Razorpay order created: {} | User: {}", razorpayOrderId, user.getEmail());
 
         return new PaymentOrderResponse(
                 razorpayOrderId, amount, "INR", receipt, "CREATED", keyId);
     }
 
-    // ─── Handle Payment Success (called by webhook) ───────────────────────────
+    // ─── Handle Payment Success (Webhook) ──────────────────────────────────────
 
     @Transactional
     public void handlePaymentSuccess(String razorpayOrderId, String paymentId, int amountInPaise) {
 
-        System.out.println("💰 Processing payment: " + paymentId + " for order: " + razorpayOrderId);
+        log.info("🔔 Webhook received: Payment {} for order {}", paymentId, razorpayOrderId);
 
-        // 1. Find the order in DB
+        // 1. Find order
         RazorpayOrder order = razorpayOrderRepository.findByRazorpayOrderId(razorpayOrderId)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + razorpayOrderId));
+                .orElseThrow(() -> {
+                    log.error("Order not found in webhook: {}", razorpayOrderId);
+                    return new RuntimeException("Order not found: " + razorpayOrderId);
+                });
 
-        // 2. IDEMPOTENCY CHECK: if already processed, skip
+        // 2. Idempotency check
         if (order.getRazorpayPaymentId() != null) {
-            System.out.println("⚠️ Payment already processed, skipping: " + paymentId);
+            log.warn("⚠️ Payment already processed: {} | Skipping", paymentId);
             return;
         }
 
-        // 3. Update order status to PAID
+        // 3. Update order
         order.setRazorpayPaymentId(paymentId);
-        order.setStatus(RazorpayOrder.RazorpayOrderStatus.PAID);  // ← Fixed
+        order.setStatus(RazorpayOrder.RazorpayOrderStatus.PAID);
         order.setPaidAt(LocalDateTime.now());
         razorpayOrderRepository.save(order);
 
-        // 4. Credit the wallet
+        // 4. Credit wallet
         BigDecimal amountInRupees = BigDecimal.valueOf(amountInPaise).divide(BigDecimal.valueOf(100));
         User user = order.getUser();
         Wallet wallet = walletService.getWalletByUser(user);
         walletService.creditWallet(wallet, amountInRupees);
 
-        // 5. Record CREDIT transaction in ledger
-        transactionService.recordCredit(
-                wallet,
-                amountInRupees,
-                "Razorpay payment: " + paymentId
-        );
+        log.info("💰 Wallet credited: User {} | Amount: ₹{} | New balance: ₹{}",
+                user.getEmail(), amountInRupees, wallet.getBalance());
 
-        System.out.println("✅ Payment processed successfully");
+        // 5. Record transaction
+        transactionService.recordCredit(wallet, amountInRupees, "Razorpay payment: " + paymentId);
+
+        log.info("✅ Payment processed successfully: {} | User: {}", paymentId, user.getEmail());
     }
 }

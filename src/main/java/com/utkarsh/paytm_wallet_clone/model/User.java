@@ -1,5 +1,6 @@
 package com.utkarsh.paytm_wallet_clone.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,6 +27,7 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String phone;
 
+    @JsonIgnore  // NEVER expose password hash in JSON responses
     @Column(nullable = false)
     private String passwordHash;
 
@@ -35,38 +37,45 @@ public class User implements UserDetails {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // ─── UserDetails interface ───────────────────────────────────────────────
+    // ─── UserDetails ─────────────────────────────────────────────────────────
 
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
+    @JsonIgnore
     @Override
     public String getPassword() {
         return this.passwordHash;
     }
 
+    @JsonIgnore
     @Override
     public String getUsername() {
-        return this.email; // email is the login identifier
+        return this.email;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isEnabled() {
         return Boolean.TRUE.equals(this.isActive);

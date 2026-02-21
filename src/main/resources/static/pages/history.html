@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - PayFlow Wallet</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">📊 Transaction History</h1>
+        <a href="dashboard.html" class="btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <div class="transaction-list">
+        <div id="transactionList">
+            <!-- Transactions will be loaded here -->
+            <div style="text-align: center; padding: 40px;">
+                <div class="loader" style="margin: 0 auto;"></div>
+                <p style="margin-top: 15px; color: var(--text-secondary);">Loading transactions...</p>
+            </div>
+        </div>
+
+        <div id="pagination" class="pagination">
+            <!-- Pagination will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+    loadTransactionHistory(0);
+</script>
+</body>
+</html>
