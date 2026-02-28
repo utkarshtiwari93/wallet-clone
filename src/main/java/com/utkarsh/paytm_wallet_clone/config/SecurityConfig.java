@@ -38,21 +38,27 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Allow static resources (HTML, CSS, JS)
+                        // Allow static resources
                         .requestMatchers("/", "/index.html", "/*.html").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/pages/**").permitAll()
                         .requestMatchers("/favicon.ico", "/error").permitAll()
-                        // Allow auth endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // ⭐ WebSocket endpoint - MUST BE ALLOWED
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Allow auth endpoints (public only)
+                        .requestMatchers("/api/auth/login", "/api/auth/register",
+                                "/api/auth/forgot-password", "/api/auth/reset-password")
+                        .permitAll()
                         .requestMatchers("/webhook/razorpay").permitAll()
+
                         // Allow CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Everything else requires authentication
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -66,11 +72,9 @@ public class SecurityConfig {
                 "http://127.0.0.1:3000",
                 "http://localhost:5500",
                 "http://127.0.0.1:5500",
-                "http://localhost:8080"  // Allow same-origin
-        ));
+                "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"
-        ));
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

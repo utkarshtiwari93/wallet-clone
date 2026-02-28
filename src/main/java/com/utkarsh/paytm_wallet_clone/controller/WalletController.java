@@ -6,11 +6,14 @@ import com.utkarsh.paytm_wallet_clone.dto.response.TransferResponse;
 import com.utkarsh.paytm_wallet_clone.dto.response.UserLookupDTO;
 import com.utkarsh.paytm_wallet_clone.dto.response.WalletBalanceDTO;
 import com.utkarsh.paytm_wallet_clone.model.User;
+import com.utkarsh.paytm_wallet_clone.service.PdfReceiptService;
 import com.utkarsh.paytm_wallet_clone.service.TransactionService;
 import com.utkarsh.paytm_wallet_clone.service.TransferService;
 import com.utkarsh.paytm_wallet_clone.service.WalletService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,22 +25,23 @@ public class WalletController {
     private final WalletService walletService;
     private final TransferService transferService;
     private final TransactionService transactionService;
+    private final PdfReceiptService pdfReceiptService;
 
     public WalletController(WalletService walletService,
                             TransferService transferService,
-                            TransactionService transactionService) {
+                            TransactionService transactionService,
+                            PdfReceiptService pdfReceiptService) {
         this.walletService = walletService;
         this.transferService = transferService;
         this.transactionService = transactionService;
+        this.pdfReceiptService = pdfReceiptService;
     }
 
-    // GET /api/wallet/balance
     @GetMapping("/balance")
     public ResponseEntity<WalletBalanceDTO> getBalance(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(walletService.getBalance(user));
     }
 
-    // GET /api/wallet/user/{phone} - NEW: Lookup user by phone
     @GetMapping("/user/{phone}")
     public ResponseEntity<UserLookupDTO> lookupUserByPhone(
             @PathVariable String phone,
@@ -47,7 +51,6 @@ public class WalletController {
         return ResponseEntity.ok(lookup);
     }
 
-    // POST /api/wallet/transfer
     @PostMapping("/transfer")
     public ResponseEntity<TransferResponse> transfer(
             @Valid @RequestBody TransferRequest request,
@@ -55,7 +58,6 @@ public class WalletController {
         return ResponseEntity.ok(transferService.transfer(user, request));
     }
 
-    // GET /api/wallet/transactions?page=0&size=10
     @GetMapping("/transactions")
     public ResponseEntity<Page<TransactionDTO>> getTransactionHistory(
             @RequestParam(defaultValue = "0") int page,
@@ -66,7 +68,6 @@ public class WalletController {
         return ResponseEntity.ok(history);
     }
 
-    // GET /api/wallet/transactions/{txnRef}
     @GetMapping("/transactions/{txnRef}")
     public ResponseEntity<TransactionDTO> getTransactionByRef(
             @PathVariable String txnRef,
@@ -75,5 +76,24 @@ public class WalletController {
         return transactionService.getTransactionByRef(user, txnRef)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ─── NEW: Download PDF Receipt ─────────────────────────────────────────────
+
+    @GetMapping("/receipt/{txnRef}")
+    public ResponseEntity<byte[]> downloadReceipt(
+            @PathVariable String txnRef,
+            @AuthenticationPrincipal User user) {
+
+        byte[] pdfBytes = pdfReceiptService.generateReceipt(txnRef, user);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "receipt_" + txnRef + ".pdf");
+        headers.setContentLength(pdfBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 }

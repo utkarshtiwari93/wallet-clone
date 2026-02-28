@@ -77,6 +77,9 @@ CREATE TABLE razorpay_orders (
         FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+
+
+
 -- ── INDEXES (for fast queries) ────────────────────
 -- These speed up the most common lookups
 

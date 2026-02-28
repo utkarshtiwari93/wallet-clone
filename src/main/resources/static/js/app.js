@@ -1,5 +1,5 @@
 // ===== API BASE URL =====
-const API_BASE = '/api'; ;
+const API_BASE = '/api';;
 
 // ===== AUTH HELPERS =====
 const Auth = {
@@ -23,7 +23,7 @@ const Auth = {
     logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
     },
 
     isAuthenticated() {

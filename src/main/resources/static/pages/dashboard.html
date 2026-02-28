@@ -1,52 +1,892 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - PayFlow Wallet</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        /* ===== PROFILE AVATAR BUTTON ===== */
+        .profile-wrapper {
+            position: relative;
+        }
+
+        .profile-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.08);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(233, 30, 99, 0.4);
+        }
+
+        /* ===== PROFILE DROPDOWN ===== */
+        .profile-dropdown {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: rgba(28, 28, 28, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 0;
+            min-width: 300px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px) scale(0.97);
+            transition: all 0.25s cubic-bezier(.4, 0, .2, 1);
+            overflow: hidden;
+        }
+
+        .profile-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .profile-card {
+            padding: 24px 20px;
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.15), rgba(156, 39, 176, 0.1));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+        }
+
+        .profile-emoji {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 12px;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+        }
+
+        .profile-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-email {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .profile-phone {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .profile-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 12px;
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        .profile-menu {
+            padding: 8px 0;
+        }
+
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: var(--text-primary);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .profile-menu-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-menu-item .menu-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .profile-menu-item.danger {
+            color: #f44336;
+        }
+
+        .profile-menu-item.danger:hover {
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .profile-menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 4px 0;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: rgba(30, 30, 30, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 420px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-box h2 {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .modal-box p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-modal-cancel {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-modal-cancel:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-modal-save {
+            background: var(--accent-pink);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
+
+        .btn-modal-save:hover {
+            background: var(--accent-pink-hover);
+        }
+
+        /* ===== NOTIFICATION POPUP ===== */
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 25px;
+            min-width: 320px;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            animation: slideInRight 0.4s ease;
+            border-left: 4px solid #4caf50;
+        }
+
+        .notification-popup.debit {
+            border-left-color: #f44336;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        .notification-popup.closing {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .notification-icon {
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .notification-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-message {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .notification-details {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .notification-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4caf50;
+            margin-top: 10px;
+        }
+
+        .notification-amount.debit {
+            color: #f44336;
+        }
+
+        /* ===== CONNECTION STATUS ===== */
+        .ws-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .ws-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+
+        .ws-dot.connected {
+            background: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        .ws-dot.disconnected {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(0.9);
+            }
+        }
+
+        /* ===== BALANCE TOGGLE ===== */
+        .balance-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .balance-toggle {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            line-height: 1;
+            backdrop-filter: blur(5px);
+        }
+
+        .balance-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+
+        .balance-hidden {
+            letter-spacing: 3px;
+            opacity: 0.7;
+        }
+
+        /* ===== BALANCE ANIMATION ===== */
+        .balance-amount.updating {
+            animation: balancePulse 0.6s ease;
+        }
+
+        @keyframes balancePulse {
+            0% {
+                transform: scale(1);
+            }
+
+            30% {
+                transform: scale(1.08);
+                color: #4caf50;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* ===== GREETING TIME ===== */
+        .greeting-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .notification-popup {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                min-width: auto;
+            }
+
+            .profile-dropdown {
+                right: -20px;
+                min-width: 280px;
+            }
+
+            .header-top {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-<div class="container">
-    <div class="dashboard-header">
-        <div class="welcome-section">
-            <div class="welcome-text">
-                <h1>👋 Welcome, <span id="userName">User</span></h1>
-                <p>Manage your digital wallet seamlessly</p>
+    <div class="container">
+        <div class="dashboard-header">
+            <div class="header-top">
+                <div class="welcome-text">
+                    <h1>👋 Welcome, <span id="userName">User</span></h1>
+                    <p class="greeting-time" id="greetingTime"></p>
+                </div>
+                <div class="header-actions">
+                    <div class="ws-status">
+                        <div class="ws-dot" id="wsStatus"></div>
+                        <span id="wsStatusText">Connecting...</span>
+                    </div>
+
+                    <!-- Profile Avatar -->
+                    <div class="profile-wrapper">
+                        <div class="profile-avatar" id="profileAvatar" onclick="toggleProfile()">
+                            👤
+                        </div>
+
+                        <!-- Profile Dropdown -->
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="profile-card">
+                                <div class="profile-emoji" id="profileEmoji">😎</div>
+                                <div class="profile-name" id="profileName">Loading...</div>
+                                <div class="profile-email" id="profileEmail">—</div>
+                                <div class="profile-phone" id="profilePhone">—</div>
+                                <div class="profile-badge">✅ Verified Account</div>
+                            </div>
+                            <div class="profile-menu">
+                                <button class="profile-menu-item" onclick="openChangePassword()">
+                                    <span class="menu-icon">🔒</span>
+                                    <span>Change Password</span>
+                                </button>
+                                <button class="profile-menu-item" onclick="window.location.href='history.html'">
+                                    <span class="menu-icon">📊</span>
+                                    <span>Transaction History</span>
+                                </button>
+                                <div class="profile-menu-divider"></div>
+                                <button class="profile-menu-item danger" onclick="Auth.logout()">
+                                    <span class="menu-icon">🚪</span>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button class="logout-btn" onclick="Auth.logout()">Logout</button>
+
+            <div class="balance-card">
+                <div class="balance-label">💰 Total Balance</div>
+                <div class="balance-row">
+                    <div class="balance-amount balance-hidden" id="walletBalance" data-balance="0.00">₹ ••••••</div>
+                    <button class="balance-toggle" id="balanceToggle" onclick="toggleBalance()"
+                        title="Show/Hide Balance">👁️</button>
+                </div>
+            </div>
         </div>
 
-        <div class="balance-card">
-            <div class="balance-label">💰 Total Balance</div>
-            <div class="balance-amount" id="walletBalance">₹0.00</div>
+        <div class="quick-actions">
+            <a href="add-money.html" class="action-card">
+                <div class="action-icon">💵</div>
+                <div class="action-title">Add Money</div>
+                <div class="action-desc">Top up your wallet instantly</div>
+            </a>
+
+            <a href="transfer.html" class="action-card">
+                <div class="action-icon">↗️</div>
+                <div class="action-title">Send Money</div>
+                <div class="action-desc">Transfer to any phone number</div>
+            </a>
+
+            <a href="history.html" class="action-card">
+                <div class="action-icon">📊</div>
+                <div class="action-title">Transaction History</div>
+                <div class="action-desc">View all your transactions</div>
+            </a>
         </div>
     </div>
 
-    <div class="quick-actions">
-        <a href="add-money.html" class="action-card">
-            <div class="action-icon">💵</div>
-            <div class="action-title">Add Money</div>
-            <div class="action-desc">Top up your wallet instantly</div>
-        </a>
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
 
-        <a href="transfer.html" class="action-card">
-            <div class="action-icon">↗️</div>
-            <div class="action-title">Send Money</div>
-            <div class="action-desc">Transfer to any phone number</div>
-        </a>
-
-        <a href="history.html" class="action-card">
-            <div class="action-icon">📊</div>
-            <div class="action-title">Transaction History</div>
-            <div class="action-desc">View all your transactions</div>
-        </a>
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-box">
+            <h2>🔒 Change Password</h2>
+            <p>Enter your current password and choose a new one.</p>
+            <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
+                <div class="form-group">
+                    <label class="form-label" for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" class="form-input"
+                        placeholder="Enter new password (min 6 chars)" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirmNewPassword">Confirm New Password</label>
+                    <input type="password" id="confirmNewPassword" class="form-input"
+                        placeholder="Re-enter new password" minlength="6" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" onclick="closeChangePassword()">Cancel</button>
+                    <button type="submit" class="btn-modal-save">Change Password</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<script src="../js/app.js"></script>
-<script>
-    loadDashboard();
-</script>
+    <!-- SockJS and Stomp Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let stompClient = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+
+        // Profile emoji options
+        const EMOJIS = ['😎', '🦊', '🐱', '🐼', '🦁', '🐸', '🦄', '🐶', '🐵', '🎃', '👻', '🤖', '🧑‍💻', '👨‍🚀', '🧑‍🎨'];
+
+        // ===== GREETING =====
+        function setGreeting() {
+            const hour = new Date().getHours();
+            let greeting;
+            if (hour < 12) greeting = '☀️ Good Morning';
+            else if (hour < 17) greeting = '🌤️ Good Afternoon';
+            else if (hour < 21) greeting = '🌅 Good Evening';
+            else greeting = '🌙 Good Night';
+
+            const el = document.getElementById('greetingTime');
+            if (el) el.textContent = greeting + ' • ' + new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+        }
+
+        // ===== DASHBOARD LOAD =====
+        async function loadDashboard() {
+            Auth.requireAuth();
+
+            const userData = Auth.getUserData();
+            document.getElementById('userName').textContent = userData.name;
+            setGreeting();
+
+            // Pick a consistent emoji based on user name
+            const nameHash = userData.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+            const emoji = EMOJIS[nameHash % EMOJIS.length];
+            document.getElementById('profileAvatar').textContent = emoji;
+            document.getElementById('profileEmoji').textContent = emoji;
+
+            try {
+                const balance = await apiCall('/wallet/balance');
+                updateBalance(balance.balance);
+            } catch (error) {
+                showAlert('Failed to load balance', 'error');
+            }
+
+            // Restore balance visibility preference
+            if (localStorage.getItem('balanceVisible') === 'true') {
+                toggleBalance();
+            }
+
+            // Load profile data
+            loadProfile();
+
+            // Connect to WebSocket
+            setTimeout(connectWebSocket, 500);
+        }
+
+        // ===== PROFILE =====
+        async function loadProfile() {
+            try {
+                const profile = await apiCall('/auth/profile');
+                document.getElementById('profileName').textContent = profile.name;
+                document.getElementById('profileEmail').textContent = '📧 ' + profile.email;
+                document.getElementById('profilePhone').textContent = '📱 ' + (profile.phone || 'Not set');
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+                // Fallback to localStorage data
+                const userData = Auth.getUserData();
+                document.getElementById('profileName').textContent = userData.name;
+                document.getElementById('profileEmail').textContent = '📧 ' + userData.email;
+            }
+        }
+
+        function toggleProfile() {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const wrapper = document.querySelector('.profile-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                document.getElementById('profileDropdown').classList.remove('show');
+            }
+        });
+
+        // ===== CHANGE PASSWORD =====
+        function openChangePassword() {
+            document.getElementById('profileDropdown').classList.remove('show');
+            document.getElementById('changePasswordModal').classList.add('show');
+        }
+
+        function closeChangePassword() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+            document.getElementById('changePasswordForm').reset();
+        }
+
+        async function handleChangePassword(event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            if (newPassword !== confirmNewPassword) {
+                showAlert('New passwords do not match', 'error');
+                return;
+            }
+
+            const submitBtn = event.target.querySelector('.btn-modal-save');
+            setLoading(submitBtn, true);
+
+            try {
+                await apiCall('/auth/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                showAlert('✅ Password changed successfully!', 'success');
+                closeChangePassword();
+            } catch (error) {
+                showAlert(error.message || 'Failed to change password', 'error');
+            } finally {
+                setLoading(submitBtn, false);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('changePasswordModal').addEventListener('click', function (e) {
+            if (e.target === this) closeChangePassword();
+        });
+
+        // ===== BALANCE =====
+        let balanceVisible = false;
+
+        function updateBalance(newBalance) {
+            const balanceEl = document.getElementById('walletBalance');
+            const formatted = parseFloat(newBalance).toFixed(2);
+            balanceEl.dataset.balance = formatted;
+
+            if (balanceVisible) {
+                balanceEl.textContent = `₹${formatted}`;
+                balanceEl.classList.remove('balance-hidden');
+            } else {
+                balanceEl.textContent = '₹ ••••••';
+                balanceEl.classList.add('balance-hidden');
+            }
+
+            balanceEl.classList.add('updating');
+            setTimeout(() => balanceEl.classList.remove('updating'), 600);
+        }
+
+        function toggleBalance() {
+            balanceVisible = !balanceVisible;
+            const balanceEl = document.getElementById('walletBalance');
+            const toggleBtn = document.getElementById('balanceToggle');
+
+            if (balanceVisible) {
+                balanceEl.textContent = `₹${balanceEl.dataset.balance}`;
+                balanceEl.classList.remove('balance-hidden');
+                toggleBtn.textContent = '🙈';
+                toggleBtn.title = 'Hide Balance';
+            } else {
+                balanceEl.textContent = '₹ ••••••';
+                balanceEl.classList.add('balance-hidden');
+                toggleBtn.textContent = '👁️';
+                toggleBtn.title = 'Show Balance';
+            }
+
+            localStorage.setItem('balanceVisible', balanceVisible);
+        }
+
+        // ===== WEBSOCKET =====
+        function connectWebSocket() {
+            const userData = Auth.getUserData();
+
+            console.log('🔌 Connecting to WebSocket...');
+            updateConnectionStatus(false, 'Connecting...');
+
+            try {
+                const socket = new SockJS('/ws');
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+
+                const headers = { 'Authorization': 'Bearer ' + Auth.getToken() };
+                stompClient.connect(headers, function (frame) {
+                    console.log('✅ WebSocket Connected:', frame);
+                    updateConnectionStatus(true, 'Live');
+                    reconnectAttempts = 0;
+
+                    stompClient.subscribe("/user/queue/balance", function (message) {
+                        const notification = JSON.parse(message.body);
+                        console.log("💰 Balance Update:", notification);
+                        updateBalance(notification.newBalance);
+                        showNotification(notification);
+                        playNotificationSound();
+                    });
+
+                    console.log("📡 Subscribed to: /user/queue/balance");
+
+                }, function (error) {
+                    console.error('❌ WebSocket Error:', error);
+                    updateConnectionStatus(false, 'Offline');
+
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                        console.log(`🔄 Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+                        setTimeout(connectWebSocket, delay);
+                    } else {
+                        updateConnectionStatus(false, 'Failed');
+                        showAlert('WebSocket connection failed. Please refresh the page.', 'warning');
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ WebSocket Connection Error:', error);
+                updateConnectionStatus(false, 'Error');
+            }
+        }
+
+        function updateConnectionStatus(connected, text) {
+            const dot = document.getElementById('wsStatus');
+            const statusText = document.getElementById('wsStatusText');
+
+            if (connected) {
+                dot.classList.add('connected');
+                dot.classList.remove('disconnected');
+            } else {
+                dot.classList.remove('connected');
+                dot.classList.add('disconnected');
+            }
+            statusText.textContent = text || (connected ? 'Live' : 'Offline');
+        }
+
+        // ===== NOTIFICATIONS =====
+        function showNotification(data) {
+            const container = document.getElementById('notificationContainer');
+
+            const popup = document.createElement('div');
+            popup.className = `notification-popup ${data.type === 'DEBIT' ? 'debit' : ''}`;
+
+            const icon = data.type === 'CREDIT' || data.type === 'TRANSFER_RECEIVED' ? '💰' : '↗️';
+            const amountSign = data.type === 'DEBIT' ? '-' : '+';
+
+            popup.innerHTML = `
+            <div class="notification-header">
+                <span class="notification-icon">${icon}</span>
+                <button class="notification-close" onclick="closeNotification(this)">✕</button>
+            </div>
+            <div class="notification-message">${data.message}</div>
+            ${data.fromUser ? `<div class="notification-details">From: ${data.fromUser}</div>` : ''}
+            <div class="notification-amount ${data.type === 'DEBIT' ? 'debit' : ''}">${amountSign}₹${parseFloat(data.amount).toFixed(2)}</div>
+        `;
+
+            container.appendChild(popup);
+
+            setTimeout(() => {
+                closeNotification(popup.querySelector('.notification-close'));
+            }, 6000);
+        }
+
+        function closeNotification(button) {
+            const popup = button.closest('.notification-popup');
+            if (popup) {
+                popup.classList.add('closing');
+                setTimeout(() => popup.remove(), 300);
+            }
+        }
+
+        function playNotificationSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (error) {
+                console.warn('Could not play notification sound:', error);
+            }
+        }
+
+        // ===== CLEANUP =====
+        window.addEventListener('beforeunload', function () {
+            if (stompClient !== null) {
+                console.log('🔌 Disconnecting WebSocket...');
+                stompClient.disconnect();
+            }
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && (stompClient === null || !stompClient.connected)) {
+                console.log('🔄 Reconnecting...');
+                connectWebSocket();
+            }
+        });
+
+        // Load dashboard
+        loadDashboard();
+    </script>
 </body>
+
 </html>

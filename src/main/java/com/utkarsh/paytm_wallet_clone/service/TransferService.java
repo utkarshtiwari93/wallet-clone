@@ -25,16 +25,17 @@ public class TransferService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final TransactionService transactionService;
+    private final WebSocketService webSocketService;  // ← ADD THIS
 
     public TransferService(UserRepository userRepository,
                            WalletRepository walletRepository,
-                           TransactionService transactionService) {
+                           TransactionService transactionService,
+                           WebSocketService webSocketService) {  // ← ADD THIS
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.transactionService = transactionService;
+        this.webSocketService = webSocketService;  // ← ADD THIS
     }
-
-    // ─── P2P Transfer ──────────────────────────────────────────────────────────
 
     @Transactional
     public TransferResponse transfer(User sender, TransferRequest request) {
@@ -58,7 +59,7 @@ public class TransferService {
                     return new UserNotFoundException("Recipient not found with phone: " + recipientPhone);
                 });
 
-        // 3. Lock wallets
+        // 3. Lock wallets in consistent order
         Wallet senderWallet;
         Wallet recipientWallet;
 
@@ -75,8 +76,7 @@ public class TransferService {
             log.warn("Insufficient funds: {} | Available: ₹{} | Required: ₹{}",
                     sender.getEmail(), senderWallet.getBalance(), amount);
             throw new InsufficientFundsException(
-                    "Insufficient funds. Available: ₹" + senderWallet.getBalance() +
-                            ", Required: ₹" + amount);
+                    "Insufficient funds. Available: ₹" + senderWallet.getBalance());
         }
 
         // 5. Debit sender
@@ -99,6 +99,32 @@ public class TransferService {
 
         log.info("✅ Transfer completed: {} → {} | Amount: ₹{} | TxnRef: {}",
                 sender.getEmail(), recipient.getEmail(), amount, txn.getTxnRef());
+
+        // ========== 8. SEND WEBSOCKET NOTIFICATIONS ==========
+
+        try {
+            // Notify sender
+            webSocketService.notifyTransferSent(
+                    sender.getEmail(),
+                    recipient.getName(),
+                    amount,
+                    newSenderBalance
+            );
+            log.info("🔔 Sent WebSocket to sender: {}", sender.getEmail());
+
+            // Notify recipient
+            webSocketService.notifyTransferReceived(
+                    recipient.getEmail(),
+                    sender.getName(),
+                    amount,
+                    newRecipientBalance
+            );
+            log.info("🔔 Sent WebSocket to recipient: {}", recipient.getEmail());
+
+        } catch (Exception e) {
+            log.error("❌ Failed to send WebSocket notification", e);
+            // Don't fail the transfer if notification fails
+        }
 
         return new TransferResponse(
                 txn.getTxnRef(),

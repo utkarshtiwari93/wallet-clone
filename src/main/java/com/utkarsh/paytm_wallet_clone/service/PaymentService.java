@@ -28,6 +28,7 @@ public class PaymentService {
     private final RazorpayOrderRepository razorpayOrderRepository;
     private final WalletService walletService;
     private final TransactionService transactionService;
+    private final WebSocketService webSocketService;  // ← ADD THIS
 
     @Value("${razorpay.key-id}")
     private String keyId;
@@ -35,14 +36,14 @@ public class PaymentService {
     public PaymentService(RazorpayClient razorpayClient,
                           RazorpayOrderRepository razorpayOrderRepository,
                           WalletService walletService,
-                          TransactionService transactionService) {
+                          TransactionService transactionService,
+                          WebSocketService webSocketService) {  // ← ADD THIS
         this.razorpayClient = razorpayClient;
         this.razorpayOrderRepository = razorpayOrderRepository;
         this.walletService = walletService;
         this.transactionService = transactionService;
+        this.webSocketService = webSocketService;  // ← ADD THIS
     }
-
-    // ─── Create Razorpay Order ────────────────────────────────────────────────
 
     @Transactional
     public PaymentOrderResponse createOrder(CreateOrderRequest request, User user)
@@ -78,44 +79,50 @@ public class PaymentService {
                 razorpayOrderId, amount, "INR", receipt, "CREATED", keyId);
     }
 
-    // ─── Handle Payment Success (Webhook) ──────────────────────────────────────
-
     @Transactional
     public void handlePaymentSuccess(String razorpayOrderId, String paymentId, int amountInPaise) {
 
         log.info("🔔 Webhook received: Payment {} for order {}", paymentId, razorpayOrderId);
 
-        // 1. Find order
         RazorpayOrder order = razorpayOrderRepository.findByRazorpayOrderId(razorpayOrderId)
-                .orElseThrow(() -> {
-                    log.error("Order not found in webhook: {}", razorpayOrderId);
-                    return new RuntimeException("Order not found: " + razorpayOrderId);
-                });
+                .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // 2. Idempotency check
         if (order.getRazorpayPaymentId() != null) {
-            log.warn("⚠️ Payment already processed: {} | Skipping", paymentId);
+            log.warn("⚠️ Payment already processed: {}", paymentId);
             return;
         }
 
-        // 3. Update order
         order.setRazorpayPaymentId(paymentId);
         order.setStatus(RazorpayOrder.RazorpayOrderStatus.PAID);
         order.setPaidAt(LocalDateTime.now());
         razorpayOrderRepository.save(order);
 
-        // 4. Credit wallet
         BigDecimal amountInRupees = BigDecimal.valueOf(amountInPaise).divide(BigDecimal.valueOf(100));
         User user = order.getUser();
         Wallet wallet = walletService.getWalletByUser(user);
+
+        BigDecimal oldBalance = wallet.getBalance();
         walletService.creditWallet(wallet, amountInRupees);
+        BigDecimal newBalance = wallet.getBalance();
 
         log.info("💰 Wallet credited: User {} | Amount: ₹{} | New balance: ₹{}",
-                user.getEmail(), amountInRupees, wallet.getBalance());
+                user.getEmail(), amountInRupees, newBalance);
 
-        // 5. Record transaction
         transactionService.recordCredit(wallet, amountInRupees, "Razorpay payment: " + paymentId);
 
-        log.info("✅ Payment processed successfully: {} | User: {}", paymentId, user.getEmail());
+        // ========== SEND WEBSOCKET NOTIFICATION ==========
+
+        try {
+            webSocketService.notifyPaymentReceived(
+                    user.getEmail(),
+                    amountInRupees,
+                    newBalance
+            );
+            log.info("🔔 Sent WebSocket to user: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("❌ Failed to send WebSocket notification", e);
+        }
+
+        log.info("✅ Payment processed: {} | User: {}", paymentId, user.getEmail());
     }
 }
