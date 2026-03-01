@@ -5,7 +5,7 @@ spring:
     name: paytm-wallet-clone
 
   datasource:
-    url: jdbc:mysql://caboose.proxy.rlwy.net:10924/railway
+    url: jdbc:mysql://caboose.proxy.rlwy.net:10924/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
